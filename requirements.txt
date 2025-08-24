@@ -1,7 +1,8 @@
 streamlit
-pymupdf
 pandas
 scikit-learn
-wordcloud
 matplotlib
-fpdf2==2.8.4
+wordcloud
+fpdf
+pymupdf
+
