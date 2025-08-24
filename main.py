@@ -59,8 +59,13 @@ def generate_pdf_report(resume_text, jd_text, matched, missing, keyword_score, c
     
     # Handle both fpdf and fpdf2
     pdf_bytes = pdf.output(dest="S")
+
+    # Debug info
+    st.write("PDF output type:", type(pdf_bytes))
+
     if isinstance(pdf_bytes, str):   # old fpdf
         pdf_bytes = pdf_bytes.encode("latin1")
+
     return pdf_bytes
 
 
