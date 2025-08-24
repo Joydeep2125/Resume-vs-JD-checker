@@ -56,9 +56,12 @@ def generate_pdf_report(resume_text, jd_text, matched, missing, keyword_score, c
     pdf.ln(5)
     pdf.cell(0, 10, "Missing Keywords:", ln=True)
     pdf.multi_cell(0, 10, ", ".join(missing) if missing else "None")
-
-    # Convert bytearray to bytes for Streamlit
-    return pdf.output(dest="S")
+    
+    # Handle both fpdf and fpdf2
+    pdf_bytes = pdf.output(dest="S")
+    if isinstance(pdf_bytes, str):   # old fpdf
+        pdf_bytes = pdf_bytes.encode("latin1")
+    return pdf_bytes
 
 
 
