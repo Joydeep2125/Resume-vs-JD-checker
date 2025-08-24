@@ -1,0 +1,7 @@
+streamlit
+pymupdf
+pandas
+scikit-learn
+wordcloud
+matplotlib
+fpdf
