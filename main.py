@@ -56,15 +56,15 @@ def generate_pdf_report(resume_text, jd_text, matched, missing, keyword_score, c
     pdf.ln(5)
     pdf.cell(0, 10, "Missing Keywords:", ln=True)
     pdf.multi_cell(0, 10, ", ".join(missing) if missing else "None")
-    
-    # Handle both fpdf and fpdf2
-    pdf_bytes = pdf.output(dest="S")
 
-    # Debug info
-    st.write("PDF output type:", type(pdf_bytes))
-
-    if isinstance(pdf_bytes, str):   # old fpdf
-        pdf_bytes = pdf_bytes.encode("latin1")
+    # For fpdf2, this returns bytes already
+    pdf_output = pdf.output(dest="S")
+    if isinstance(pdf_output, str):
+        pdf_bytes = pdf_output.encode("latin1")   # str → bytes
+    elif isinstance(pdf_output, bytearray):
+        pdf_bytes = bytes(pdf_output)             # bytearray → bytes
+    else:
+        pdf_bytes = pdf_output                    # already bytes
 
     return pdf_bytes
 
