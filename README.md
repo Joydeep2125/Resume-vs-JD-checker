@@ -25,7 +25,7 @@ You can also **download a PDF report** with the results.
 Clone the repo and install dependencies:  
 
 ```bash
-git clone https://github.com/YJoydeep2125/resume-vs-jd-checker.git
+git clone https://github.com/Your Username/resume-vs-jd-checker.git
 cd resume-vs-jd-checker
 pip install -r requirements.txt
 
