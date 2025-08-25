@@ -1,5 +1,5 @@
 import streamlit as st
-import fitz  # PyMuPDF for PDF text extraction
+import fitz  # PyMuPDF
 import pandas as pd
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -7,6 +7,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from fpdf import FPDF
+
+# NEW: Hugging Face SentenceTransformer
+from sentence_transformers import SentenceTransformer, util
+
+# Load the transformer model (downloads automatically on first run)
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
 # ------------------ Helper Functions ------------------ #
 def extract_text_from_pdf(uploaded_file):
@@ -36,8 +42,15 @@ def cosine_similarity_score(resume_text, jd_text):
     score = cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0] * 100
     return score
 
+# NEW: AI Semantic Similarity using Transformers
+def semantic_similarity_score(resume_text, jd_text):
+    emb_resume = model.encode(resume_text, convert_to_tensor=True)
+    emb_jd = model.encode(jd_text, convert_to_tensor=True)
+    score = util.pytorch_cos_sim(emb_resume, emb_jd).item() * 100
+    return score
+
 # Function to generate PDF report
-def generate_pdf_report(resume_text, jd_text, matched, missing, keyword_score, cosine_score, final_score):
+def generate_pdf_report(resume_text, jd_text, matched, missing, keyword_score, cosine_score, semantic_score, final_score):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -46,7 +59,8 @@ def generate_pdf_report(resume_text, jd_text, matched, missing, keyword_score, c
     pdf.ln(10)
 
     pdf.cell(0, 10, f"Keyword Match Score: {keyword_score:.2f}%", ln=True)
-    pdf.cell(0, 10, f"Cosine Similarity Score: {cosine_score:.2f}%", ln=True)
+    pdf.cell(0, 10, f"TF-IDF Cosine Similarity Score: {cosine_score:.2f}%", ln=True)
+    pdf.cell(0, 10, f"AI Semantic Similarity Score: {semantic_score:.2f}%", ln=True)
     pdf.cell(0, 10, f"Final Weighted Score: {final_score:.2f}%", ln=True)
 
     pdf.ln(10)
@@ -57,21 +71,20 @@ def generate_pdf_report(resume_text, jd_text, matched, missing, keyword_score, c
     pdf.cell(0, 10, "Missing Keywords:", ln=True)
     pdf.multi_cell(0, 10, ", ".join(missing) if missing else "None")
 
-    # For fpdf2, this returns bytes already
     pdf_output = pdf.output(dest="S")
     if isinstance(pdf_output, str):
-        pdf_bytes = pdf_output.encode("latin1")   # str → bytes
+        pdf_bytes = pdf_output.encode("latin1")
     elif isinstance(pdf_output, bytearray):
-        pdf_bytes = bytes(pdf_output)             # bytearray → bytes
+        pdf_bytes = bytes(pdf_output)
     else:
-        pdf_bytes = pdf_output                    # already bytes
+        pdf_bytes = pdf_output
 
     return pdf_bytes
 
 
 
 # ------------------ Streamlit UI ------------------ #
-st.title("Resume vs Job Description Matcher")
+st.title("AI-Powered Resume vs Job Description Matcher")
 
 resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
 jd_file = st.file_uploader("Upload Job Description (PDF)", type=["pdf"])
@@ -81,21 +94,25 @@ if resume_file and jd_file:
     jd_text = extract_text_from_pdf(jd_file)
 
     if resume_text and jd_text:
-        # --- Keyword Match ---
+        # Keyword Match
         kw_score, matched_keywords, missing_keywords = keyword_match(resume_text, jd_text)
 
-        # --- Cosine Similarity ---
+        # TF-IDF Cosine
         cs_score = cosine_similarity_score(resume_text, jd_text)
 
-        # Final weighted score (50% keywords + 50% cosine similarity)
-        final_score = (kw_score * 0.5) + (cs_score * 0.5)
+        # AI Semantic Similarity
+        sem_score = semantic_similarity_score(resume_text, jd_text)
+
+        # Final weighted score (30% keywords + 30% TF-IDF + 40% AI semantic)
+        final_score = (kw_score * 0.3) + (cs_score * 0.3) + (sem_score * 0.4)
 
         st.subheader("Match Results")
         st.write(f"Keyword Match Score: {kw_score:.2f}%")
-        st.write(f"Cosine Similarity Score: {cs_score:.2f}%")
+        st.write(f"TF-IDF Cosine Similarity Score: {cs_score:.2f}%")
+        st.write(f"AI Semantic Similarity Score: {sem_score:.2f}%")
         st.write(f"Final Weighted Score: {final_score:.2f}%")
 
-        # --- Visualization: Word Cloud ---
+        # Word Cloud
         st.subheader("Word Cloud of Resume")
         wordcloud = WordCloud(width=800, height=400, background_color='white').generate(resume_text)
         fig, ax = plt.subplots()
@@ -103,7 +120,7 @@ if resume_file and jd_file:
         ax.axis("off")
         st.pyplot(fig)
 
-        # --- Table: Matched vs Missing Keywords ---
+        # Keyword Table
         st.subheader("Keyword Analysis Table")
         data = {
             "Matched Keywords": list(matched_keywords),
@@ -112,7 +129,7 @@ if resume_file and jd_file:
         df = pd.DataFrame.from_dict(data, orient='index').transpose()
         st.dataframe(df)
 
-        # --- Suggestions ---
+        # Suggestions
         st.subheader("Suggestions")
         if missing_keywords:
             st.write("Add these missing terms to your resume for better matching:")
@@ -120,9 +137,9 @@ if resume_file and jd_file:
         else:
             st.success("Great! Your resume already covers most keywords in the JD.")
 
-        # --- PDF Download Button ---
+        # PDF Download
         st.subheader("Download Report")
-        pdf_bytes = generate_pdf_report(resume_text, jd_text, matched_keywords, missing_keywords, kw_score, cs_score, final_score)
+        pdf_bytes = generate_pdf_report(resume_text, jd_text, matched_keywords, missing_keywords, kw_score, cs_score, sem_score, final_score)
         st.download_button("Download PDF Report", data=pdf_bytes, file_name="resume_vs_jd_report.pdf", mime="application/pdf")
 
     else:
