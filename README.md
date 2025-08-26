@@ -3,8 +3,6 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)  
 [![Streamlit](https://img.shields.io/badge/Streamlit-Cloud-red.svg)](https://streamlit.io/)  
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)  
-[![Stars](https://img.shields.io/github/stars/Joydeep2125/Resume-vs-JD-checker?style=social)](https://github.com/Joydeep2125/Resume-vs-JD-checker/stargazers)  
-[![Forks](https://img.shields.io/github/forks/Joydeep2125/Resume-vs-JD-checker?style=social)](https://github.com/Joydeep2125/Resume-vs-JD-checker/network/members)
 
 
 A **Streamlit web app** that compares a **Resume** with a **Job Description (JD)** to evaluate how well they match.  
